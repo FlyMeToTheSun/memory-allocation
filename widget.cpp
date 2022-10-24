@@ -139,7 +139,6 @@ Widget::Widget(QWidget *parent)
     simul_job_btn->setGeometry(210,350,200,30);
     connect(simul_job_btn, SIGNAL(clicked()), this, SLOT(startSim()));
 
-
     //SELECT ALGO VALUES --------------------------------------------------------------------------
     QLabel *comp_time_lbl = new QLabel(this);
     comp_time_lbl->setText("Compaction\nTime:");
@@ -172,19 +171,19 @@ Widget::Widget(QWidget *parent)
     job_off_lbl->setStyleSheet("color:black");
     job_off_lbl->setGeometry(260,230,200,30);
 
-    QLabel *curr_time_unit_lbl = new QLabel(this);
+    curr_time_unit_lbl = new QLabel(this);
     curr_time_unit_lbl->setText("Current Time Unit: ");
     curr_time_unit_lbl->setFont(QFont("Times", 9));
     curr_time_unit_lbl->setStyleSheet("color:black");
     curr_time_unit_lbl->setGeometry(225,265,200,20);
 
-    QLabel *curr_fragmentation_lbl = new QLabel(this);
+    curr_fragmentation_lbl = new QLabel(this);
     curr_fragmentation_lbl->setText("Current Fragmentation: ");
     curr_fragmentation_lbl->setFont(QFont("Times", 9));
     curr_fragmentation_lbl->setStyleSheet("color:black");
     curr_fragmentation_lbl->setGeometry(225,285,200,20);
 
-    QLabel *curr_jobs_fin_lbl = new QLabel(this);
+    curr_jobs_fin_lbl = new QLabel(this);
     curr_jobs_fin_lbl->setText("Jobs Finished: ");
     curr_jobs_fin_lbl->setFont(QFont("Times", 9));
     curr_jobs_fin_lbl->setStyleSheet("color:black");
@@ -272,7 +271,7 @@ void Widget::addJob(){
         input_table->setItem(in_tbl_ctr-1,0,new QTableWidgetItem(QString::number(in_tbl_ctr)));
         input_table->setItem(in_tbl_ctr-1,1,new QTableWidgetItem(QString::number(processSizeArray[in_tbl_ctr-1])));
         input_table->setItem(in_tbl_ctr-1,2,new QTableWidgetItem(QString::number(processTUArray[in_tbl_ctr-1])));
-        in_tbl_ctr = in_tbl_ctr + 1;
+        in_tbl_ctr++;
     }
     else {
       QMessageBox::warning(this, "Error", "Illegal Entry");
@@ -291,7 +290,7 @@ void Widget::delJob(){
         processSizeArray.pop_back();
         processTUArray.pop_back();
 
-        in_tbl_ctr = in_tbl_ctr + 1;
+        in_tbl_ctr++;
     }
     else {
              QMessageBox::warning(this, "Error", "Nothing to Delete");
@@ -311,17 +310,17 @@ void Widget::addBlock(){
 
         //initializes a seperate  array for block allocation calculation
         blockGeneralArray.clear();
-        for (int i = 0; i < block_ctr; i++) {
+        for (int i = 1; i <= block_ctr; i++) {
 
           //rectangle output
-          blockHeight = blockSizeArray[i];
+          blockHeight = blockSizeArray[i-1];
           blockHeight = blockHeight/2;
 
           //block array replication
           int blockMaxRange = blockYval + blockHeight;
           std::vector<int> vectorArray = {i, blockHeight, blockYval, blockMaxRange};
           blockGeneralArray.push_back(vectorArray);
-          qInfo() << blockGeneralArray;
+          qInfo() << "blockGeneralArray" << blockGeneralArray;
 
           blockYval = blockMaxRange + 1;
 
@@ -337,7 +336,7 @@ void Widget::addBlock(){
 
 void Widget::delBlock(){
     if (block_ctr >= 1){
-        block_ctr = block_ctr - 1;
+        block_ctr--;
         blockSizeArray.pop_back();
         update();
     }
@@ -397,7 +396,7 @@ void Widget::paintEvent(QPaintEvent *)
 }
 
 void Widget::FirstFit(){
-    qInfo() << "First Fit Started";
+    //qInfo() << "First Fit Started";
 
     int jobArraySize = processSizeArray.size();
 
@@ -410,37 +409,61 @@ void Widget::FirstFit(){
 
     while (completedJobs < jobArraySize){
 
-        for (int currentBlock = 0; currentBlock < blockArraySize; currentBlock++)
+        //iterates current job through all memory blocks
+        for (int currentBlock = 1; currentBlock <= blockArraySize; currentBlock++)
         {
-            qInfo() << "Current Block: "<< currentBlock;
+
             //setup current block variables
             int allocationArraySize = allocationArray.size();
-            qInfo() << "Current AllocationSize: "<< allocationArraySize;
-            int currentBlockHeight=blockGeneralArray[currentBlock][1];
-            int currentblockYval=blockGeneralArray[currentBlock][2];
-            int currentblockMaxRange=blockGeneralArray[currentBlock][3];
-            int currentblockNumber=blockGeneralArray[currentBlock][0];
 
             int currentJobSize = processSizeArray[currentJob - 1];
+
+            int currentBlockHeight=blockGeneralArray[currentBlock-1][1];
+            int currentblockYval=blockGeneralArray[currentBlock-1][2];
+            int currentblockMaxRange=blockGeneralArray[currentBlock-1][3];
+            int currentblockNumber=blockGeneralArray[currentBlock-1][0];
+
+            //i need to fix this
+            int currentAllocationBlockNumber;
+            if (allocationArraySize>0)
+            currentAllocationBlockNumber=allocationArray[currentBlock-1][0];
+
+            /*
+            qInfo() << "Current Block: "<< currentBlock;
+
+            qInfo() << "Current AllocationSize: "<< allocationArraySize;
+            qInfo() << "Job: " << currentJob;
+            qInfo() <<"currentJobSize: "<< currentJobSize;
+
+            qInfo() <<"currentBlockHeight: " << currentBlockHeight;
+            qInfo() <<"currentblockYval: " << currentBlockHeight;
+            qInfo() <<"currentblockMaxRange: " << currentblockMaxRange;
+            qInfo() << "currentblockNumber: " << currentblockNumber;*/
 
             //Check if process fits in memory block without considering previous allocations
             if (currentJobSize < currentBlockHeight){
 
                 //setup allocation variables
                 int allocationHeight = currentJobSize;
+                qInfo() <<"allocationHeight: " << allocationHeight;
 
                 //check if process fits in memory block considering previous allocations
-                //considers if the array has members and if said allocations exist with the memory block
-                if(allocationArraySize > 0 && currentBlock == currentblockNumber)
+                //considers if the array has members and if allocations exist within the memory block
+                if(allocationArraySize > 0 && currentBlock == currentAllocationBlockNumber)
                 {
-                    //iterates through all avaliable spaces(Kb) of the memory block
+                    //iterates through all avaliable spaces(Kb) of the memory block.
                     for (int currentAllocation = 0; currentAllocation < currentBlockHeight; currentAllocation++){
 
                         int checkCurrentAllocation = currentAllocation + currentBlockHeight;
                         int checkPossibleMaxAllocation = checkCurrentAllocation + allocationHeight;
+                        qInfo() << checkCurrentAllocation << " " <<checkPossibleMaxAllocation;
+
+                        qInfo() << "allocationArray: " << allocationArray;
+
 
                         //checks if currentAllocation is within range of any other allocations.
-                        if (checkCurrentAllocation != allocationArray[currentAllocation][2]){
+                        if (){
+                            qInfo() << "allocationArray" << allocationArray[currentAllocation][2];
 
                             //checks if possible max allocation is within block range
                             if(checkPossibleMaxAllocation < allocationArray[currentAllocation][3] && checkPossibleMaxAllocation < currentblockMaxRange){
@@ -448,21 +471,31 @@ void Widget::FirstFit(){
                                 int allocationEnd = allocationArray[currentAllocation][3];
 
                                 //assigns allocation
-                                std::vector<int> vectorSimArray = {currentBlock, allocationHeight, allocationStart, allocationEnd};
-                                allocationArray.push_back(vectorSimArray);
+                                //std::vector<int> vectorSimArray = {currentBlock, allocationHeight, allocationStart, allocationEnd};
+                                //allocationArray.push_back(vectorSimArray);
                                 qInfo() << "Inserted Value";
                             }
+                            else{
+                                qInfo() << "No valid checkPossibleMaxAllocation";
+                            }
+                        }
+                        else{
+                            qInfo() << "allocationArray: " << allocationArray[currentAllocation][2];
+                            qInfo() << "Invalid checkCurrentAllocation";
                         }
                     }
                 }
-                else{
+                //catches if there is no allocations yet
+                else if(allocationArraySize <= 0){
                     int allocationStart = currentBlockHeight;
                     int allocationEnd = currentBlockHeight + currentJobSize;
 
                     //assigns allocation
                     std::vector<int> vectorSimArray = {currentBlock, allocationHeight, allocationStart, allocationEnd};
                     allocationArray.push_back(vectorSimArray);
-                    qInfo() << "Inserted Value via no array";
+                    qInfo() << "allocationArray: " << allocationArray;
+                    delay();
+                    currentBlock--;
                 }
 
             }
@@ -472,8 +505,18 @@ void Widget::FirstFit(){
 
         //movement of variables
         delay();
-        currentJob = currentJob + 1;
+        if (currentJob < jobArraySize){
+            currentJob = currentJob + 1;
+        }
+        else {
+            currentJob = 1;
+        }
+
         currentTime = currentTime + 1;
+        QString timeStr = QString::number(currentTime);
+        QString timValTxt = "Current Time Unit: " + timeStr;
+        curr_time_unit_lbl->setText(timValTxt);
+
     }
 }
 void Widget::BestFit(){
@@ -485,7 +528,7 @@ void Widget::WorstFit(){
 
 void Widget::delay()
 {
-    QTime dieTime= QTime::currentTime().addSecs(1);
+    QTime dieTime= QTime::currentTime().addSecs(2);
     while (QTime::currentTime() < dieTime)
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }

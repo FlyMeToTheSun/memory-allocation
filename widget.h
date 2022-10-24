@@ -56,6 +56,10 @@ private:
     QPushButton *del_block_btn;
     QPushButton *simul_job_btn;
 
+    QLabel *curr_time_unit_lbl;
+    QLabel *curr_fragmentation_lbl;
+    QLabel *curr_jobs_fin_lbl;
+
     bool m_clicked;
 
 
