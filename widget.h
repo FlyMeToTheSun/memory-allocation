@@ -14,6 +14,8 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QGraphicsItem>
+#include <QTime>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -69,5 +71,6 @@ public slots:
     void BestFit();
     void WorstFit();
 
+    void delay();
 };
 #endif // WIDGET_H

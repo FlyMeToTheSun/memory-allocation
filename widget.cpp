@@ -19,10 +19,13 @@
 
 #include "ui_widget.h"
 
+#include <QTime>
+
+
 std::vector<int> processSizeArray;
 std::vector<int> processTUArray;
 std::vector<int> blockSizeArray;
-std::vector<std::vector<int>> simulationArray;
+std::vector<std::vector<int>> allocationArray;
 std::vector<std::vector<int>> blockGeneralArray;
 
 int in_tbl_ctr = 1;
@@ -300,8 +303,29 @@ void Widget::addBlock(){
     bool ok;
     int blockSize = blockSizeStr.toInt(&ok);
     if (blockSize > 0 && blockSize <= 1450 ) {
+        //below array used for block gui presentaiton
         blockSizeArray.push_back(blockSize);
         block_ctr = block_ctr + 1;
+        int blockYval = 5;
+        int blockHeight = 200;
+
+        //initializes a seperate  array for block allocation calculation
+        blockGeneralArray.clear();
+        for (int i = 0; i < block_ctr; i++) {
+
+          //rectangle output
+          blockHeight = blockSizeArray[i];
+          blockHeight = blockHeight/2;
+
+          //block array replication
+          int blockMaxRange = blockYval + blockHeight;
+          std::vector<int> vectorArray = {i, blockHeight, blockYval, blockMaxRange};
+          blockGeneralArray.push_back(vectorArray);
+          qInfo() << blockGeneralArray;
+
+          blockYval = blockMaxRange + 1;
+
+        }
 
         inputBlockSize->setText("");
         update();
@@ -341,6 +365,7 @@ void Widget::paintEvent(QPaintEvent *)
 
     pen.setColor(Qt::black);
     pen.setWidth(2);
+    painter.setPen(pen);
 
     //display rectangles
     for (int i = 0; i < block_ctr; i++) {
@@ -350,11 +375,6 @@ void Widget::paintEvent(QPaintEvent *)
       QString blockHeightStr = QString::number(blockHeight);
       blockHeight = blockHeight/2;
       painter.drawRect(QRect(blockXval,blockYval,100,blockHeight));
-
-      //block array replication
-      int blockMaxRange = blockYval + blockHeight;
-      std::vector<int> vectorArray = {i, blockHeight, blockYval, blockMaxRange};
-      blockGeneralArray.push_back(vectorArray);
 
       //job simulation output
 
@@ -367,6 +387,7 @@ void Widget::paintEvent(QPaintEvent *)
       blockHeight = blockSizeArray[i+1];
       blockHeight = blockHeight/2;
 
+      //moves block to next line
       currentYval = blockHeight + blockYval;
       if (currentYval > 750){
         blockXval = blockXval + 143;
@@ -376,31 +397,82 @@ void Widget::paintEvent(QPaintEvent *)
 }
 
 void Widget::FirstFit(){
+    qInfo() << "First Fit Started";
+
     int jobArraySize = processSizeArray.size();
 
     int blockArraySize = blockGeneralArray.size();
-    int simulationArraySize = simulationArray.size();
 
     int completedJobs = 0;
     int currentTime = 0;
 
+    int currentJob = 1;
+
     while (completedJobs < jobArraySize){
-        int currentJob = 1;
+
         for (int currentBlock = 0; currentBlock < blockArraySize; currentBlock++)
         {
-            //Check if Fit is Block
-            if (processSizeArray[currentJob] < blockGeneralArray[currentBlock][2]){
+            qInfo() << "Current Block: "<< currentBlock;
+            //setup current block variables
+            int allocationArraySize = allocationArray.size();
+            qInfo() << "Current AllocationSize: "<< allocationArraySize;
+            int currentBlockHeight=blockGeneralArray[currentBlock][1];
+            int currentblockYval=blockGeneralArray[currentBlock][2];
+            int currentblockMaxRange=blockGeneralArray[currentBlock][3];
+            int currentblockNumber=blockGeneralArray[currentBlock][0];
 
-                //check if there is space in block
-                for (int currentAllocation = 0; currentAllocation < simulationArraySize; currentAllocation++){
-                    if (processSizeArray[currentJob] < simulationArray[currentAllocation][3] && processSizeArray[currentJob] > simulationArray[currentAllocation][4]){
-                        std::vector<int> vectorSimArray = {currentBlock, blockHeight, blockYval, blockMaxRange};
-                        blockGeneralArray.push_back(vectorSimArray);
+            int currentJobSize = processSizeArray[currentJob - 1];
+
+            //Check if process fits in memory block without considering previous allocations
+            if (currentJobSize < currentBlockHeight){
+
+                //setup allocation variables
+                int allocationHeight = currentJobSize;
+
+                //check if process fits in memory block considering previous allocations
+                //considers if the array has members and if said allocations exist with the memory block
+                if(allocationArraySize > 0 && currentBlock == currentblockNumber)
+                {
+                    //iterates through all avaliable spaces(Kb) of the memory block
+                    for (int currentAllocation = 0; currentAllocation < currentBlockHeight; currentAllocation++){
+
+                        int checkCurrentAllocation = currentAllocation + currentBlockHeight;
+                        int checkPossibleMaxAllocation = checkCurrentAllocation + allocationHeight;
+
+                        //checks if currentAllocation is within range of any other allocations.
+                        if (checkCurrentAllocation != allocationArray[currentAllocation][2]){
+
+                            //checks if possible max allocation is within block range
+                            if(checkPossibleMaxAllocation < allocationArray[currentAllocation][3] && checkPossibleMaxAllocation < currentblockMaxRange){
+                                int allocationStart = checkCurrentAllocation;
+                                int allocationEnd = allocationArray[currentAllocation][3];
+
+                                //assigns allocation
+                                std::vector<int> vectorSimArray = {currentBlock, allocationHeight, allocationStart, allocationEnd};
+                                allocationArray.push_back(vectorSimArray);
+                                qInfo() << "Inserted Value";
+                            }
+                        }
                     }
+                }
+                else{
+                    int allocationStart = currentBlockHeight;
+                    int allocationEnd = currentBlockHeight + currentJobSize;
+
+                    //assigns allocation
+                    std::vector<int> vectorSimArray = {currentBlock, allocationHeight, allocationStart, allocationEnd};
+                    allocationArray.push_back(vectorSimArray);
+                    qInfo() << "Inserted Value via no array";
                 }
 
             }
         }
+
+        //checks if job is complete
+
+        //movement of variables
+        delay();
+        currentJob = currentJob + 1;
         currentTime = currentTime + 1;
     }
 }
@@ -411,6 +483,11 @@ void Widget::WorstFit(){
 
 }
 
-
+void Widget::delay()
+{
+    QTime dieTime= QTime::currentTime().addSecs(1);
+    while (QTime::currentTime() < dieTime)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+}
 
 
