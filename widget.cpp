@@ -171,19 +171,19 @@ Widget::Widget(QWidget *parent)
     job_off_lbl->setGeometry(260,230,200,30);
 
     curr_time_unit_lbl = new QLabel(this);
-    curr_time_unit_lbl->setText("Current Time Unit: ");
+    curr_time_unit_lbl->setText("Current Time Unit: 0");
     curr_time_unit_lbl->setFont(QFont("Times", 9));
     curr_time_unit_lbl->setStyleSheet("color:black");
     curr_time_unit_lbl->setGeometry(225,265,200,20);
 
-    curr_fragmentation_lbl = new QLabel(this);
-    curr_fragmentation_lbl->setText("Current Fragmentation: ");
-    curr_fragmentation_lbl->setFont(QFont("Times", 9));
-    curr_fragmentation_lbl->setStyleSheet("color:black");
-    curr_fragmentation_lbl->setGeometry(225,285,200,20);
+    curr_job_lbl = new QLabel(this);
+    curr_job_lbl->setText("Current Job: 0");
+    curr_job_lbl->setFont(QFont("Times", 9));
+    curr_job_lbl->setStyleSheet("color:black");
+    curr_job_lbl->setGeometry(225,285,200,20);
 
     curr_jobs_fin_lbl = new QLabel(this);
-    curr_jobs_fin_lbl->setText("Jobs Finished: ");
+    curr_jobs_fin_lbl->setText("Jobs Finished: 0");
     curr_jobs_fin_lbl->setFont(QFont("Times", 9));
     curr_jobs_fin_lbl->setStyleSheet("color:black");
     curr_jobs_fin_lbl->setGeometry(225,305,200,20);
@@ -302,8 +302,8 @@ void Widget::addBlock(){
     int blockSize = blockSizeStr.toInt(&ok);
     if (blockSize > 0 && blockSize <= 1450 ) {
         //below array used for block gui presentaiton
-        inputBlockArray.push_back(blockSize);
-        block_ctr = block_ctr + 1;
+        //inputBlockArray.push_back(blockSize);
+        //block_ctr = block_ctr + 1;
         int blockYval = 5;
         int blockHeight = 200;
 
@@ -353,9 +353,6 @@ void Widget::paintEvent(QPaintEvent *)
     pen.setColor(Qt::gray);
     pen.setWidth(1);
 
-    int blockXval = 450;
-    int blockYval = 5;
-    int blockHeight = 200;
     int currentYval = 0;
     painter.setPen(pen);
     painter.drawRect(QRect(5,28,410,190));
@@ -363,31 +360,30 @@ void Widget::paintEvent(QPaintEvent *)
 
     pen.setColor(Qt::black);
 
-    pen.setWidth(2);
+    pen.setWidth(3);
     painter.setPen(pen);
 
-    //display memory block rectangles
-    for (int i = 0; i < block_ctr; i++) {
+    int blockXval = 450;
+    int blockYval = 5;
+    int blockHeight;
 
+    //display memory block rectangles
+    int memoryBlockSize = memoryBlockArray.size();
+    for (int i = 0; i < memoryBlockSize; i++) {
       //rectangle output
-      blockHeight = inputBlockArray[i];
+      blockHeight = (memoryBlockArray[i][1]);
+      blockHeight = blockHeight*2;
       QString blockHeightStr = QString::number(blockHeight);
       blockHeight = blockHeight/2;
       painter.drawRect(QRect(blockXval,blockYval,100,blockHeight));
-
-      //job simulation output
 
       //text output
       blockYval = blockYval + blockHeight + 1;
       QString blockSizeValTxt = blockHeightStr + "Kb";
       painter.drawText(blockXval+103,blockYval, blockSizeValTxt);
 
-      //catches maximum range
-      blockHeight = inputBlockArray[i+1];
-      blockHeight = blockHeight/2;
-
       //moves block to next line
-      currentYval = blockHeight + blockYval;
+      currentYval = (memoryBlockArray[i+1][3]);
       if (currentYval > 750){
         blockXval = blockXval + 143;
         blockYval = 5;
@@ -396,207 +392,235 @@ void Widget::paintEvent(QPaintEvent *)
 
 
     //display allocation rectangles
-    int alloBlockXval = 450;
     QPen pen1;
-    pen1.setColor(Qt::cyan);
+    pen1.setColor(Qt::black);
     QBrush brush(Qt::cyan, Qt::SolidPattern);
-    pen1.setWidth(1);
+    pen1.setWidth(2);
 
 
     QPen pen2;
     pen2.setColor(Qt::black);
     pen2.setWidth(2);
 
+    int blockXval2 = 450;
+    int blockYval2 = 5;
+    int blockHeight2;
 
     int alloSize = allocationArray.size();
-    for (int i = 0; i < alloSize; i++) {
+    for (int i = 0; i < alloSize; i++)
+    {
+        //rectangle output
+        blockHeight2 = (allocationArray[i][1]);
+        QString blockHeightStr = QString::number(blockHeight2*2);
+        blockHeight2 = blockHeight2/2;
 
-      //rectangle output
-      int alloBlockHeight = allocationArray[i][1];
-      int alloBlockYVal = allocationArray[i][2];
-      int alloBlockMaxRange = allocationArray[i][3];
+        painter.setPen(pen1);
+        painter.drawRect(QRect(blockXval2,blockYval2,100,blockHeight2));
+        painter.fillRect(QRect(blockXval2,blockYval2,100,blockHeight2), brush);
 
-      int paintYval = alloBlockYVal;
-      if (alloBlockYVal > 750){
-        paintYval = alloBlockYVal - 750;
-      }
-      else if (alloBlockYVal > 1500){
-        paintYval = alloBlockYVal - 1500;
-      }
-      else if (alloBlockYVal > 2250){
-          paintYval = alloBlockYVal - 2250;
-      } else {
-          paintYval = alloBlockYVal;
-      }
+        //text output
+        painter.setPen(pen2);
+        int midAlloBlockHeight = allocationArray[i][3]+(blockHeight2/2);
+        QString alloBlockHeightStr = QString::number(allocationArray[i][4]);
+        QString blockSizeValTxt = "Job " + alloBlockHeightStr;
+        painter.drawText(blockXval2+20,midAlloBlockHeight, blockSizeValTxt);
 
-      painter.setPen(pen1);
-      painter.drawRect(QRect(alloBlockXval,paintYval,100,alloBlockHeight));
-      painter.fillRect(QRect(alloBlockXval,paintYval,100,alloBlockHeight), brush);
+        //catches maximum range
+        blockHeight2 = allocationArray[i+1][1];
 
-
-      //text output
-      painter.setPen(pen2);
-      int midAlloBlockHeight = alloBlockYVal+(alloBlockHeight/2);
-      QString alloBlockHeightStr = QString::number(allocationArray[i][4]);
-      QString blockSizeValTxt = "Job " + alloBlockHeightStr;
-      painter.drawText(alloBlockXval+20,midAlloBlockHeight, blockSizeValTxt);
+        //moves block to next line
+        int currentYval2 = blockHeight2 + blockYval2;
+        if (currentYval2 > 750)
+        {
+            blockXval2 = blockXval2 + 143;
+            blockYval2 = 5;
+        }
     }
+
 }
 
 void Widget::FirstFit(){
-    //qInfo() << "First Fit Started";
-
     int processArraySize = processArray.size();
-
     int blockArraySize = memoryBlockArray.size();
-
+    int allocationArraySize = allocationArray.size();
     int completedJobs = 0;
     int currentTime = 0;
-    int currentJob = 1;
-    int allocationArraySize = allocationArray.size();
 
-    while (completedJobs <= processArraySize){
-        qInfo() << "completed jobs: " <<currentJob;
-        qInfo() << "proceessing: " <<currentJob;
 
-        //check if job is not in the table
-        if(processArray[currentJob-1][3] == false && processArray[currentJob-1][2] == 0){
+    for (int jobCounter = 0; completedJobs < processArraySize; jobCounter++){
 
-            //iterates current job through all memory blocks
-            for (int currentBlock = 1; currentBlock <= blockArraySize; currentBlock++)
+        //check if a process cannot fit into any block
+        int overSizeBlock = 0;
+        for (int blockCounter = 0; blockCounter < blockArraySize;blockCounter++)
+        {
+            if ((processArray[blockCounter][0]/2) > memoryBlockArray[blockCounter][1])
             {
+                overSizeBlock++;
+            }
+            if(overSizeBlock >= blockArraySize)
+            {
+                goto error;
+            }
+        }
 
-                //setup current block variables
-                allocationArraySize = allocationArray.size();
 
-                int currentJobSize = processArray[currentJob - 1][0];
+        //check if job is not in allocations and finished
+        completedJobs = 0;//reset counter
+        for (int processCounter = 0; processCounter < processArraySize;processCounter++){
+            //qInfo() << processArray[processCounter][3] << processArray[processCounter][1];
+            if(processArray[processCounter][3] == false && processArray[processCounter][1] == 0){
+               completedJobs++;
+               //since this iteration covers all jobs, if all jobs are complete we abort the the simulation loop
+            }
+            if (completedJobs >= processArraySize){
+                goto complete;
+            }
+        }
 
-                int currentBlockHeight=memoryBlockArray[currentBlock-1][1];
-                int currentblockYval=memoryBlockArray[currentBlock-1][2];
-                int currentblockMaxRange=memoryBlockArray[currentBlock-1][3];
-                int currentblockNumber=memoryBlockArray[currentBlock-1][0];
+        //resets loop indefinitely
+        if(jobCounter>=processArraySize){
+            jobCounter = 0;
+        }
 
-                int currentAllocationBlockNumber;
-                if (allocationArraySize>0)
-                currentAllocationBlockNumber=allocationArray[currentBlock-1][0];
+        //manages the time variable
+        currentTime++;
+        QString timeStr = QString::number(currentTime);
+        QString timValTxt = "Current Time Unit: " + timeStr;
+        curr_time_unit_lbl->setText(timValTxt);
 
-                //Check if process fits in memory block without considering allocations
-                if (currentJobSize < currentBlockHeight){
 
-                    //setup allocation variables
-                    int allocationHeight = currentJobSize;
+        //increment turnaround time despite not in memory
+        for (int jobCounter = 0; jobCounter<processArraySize; jobCounter++){
+            if(processArray[jobCounter][3] == false && processArray[jobCounter][1] != 0){
+                processArray[jobCounter][2] = processArray[jobCounter][2] + 1;
 
-                    //check if process fits in memory block considering allocations
-                    //considers if the array has members and if allocations exist within the memory block
-                    if(allocationArraySize > 0)
-                    {
-                        int currentAllocationMaxRange;
-                        for(int currentAllocationNumber = 0; currentAllocationNumber < allocationArraySize; currentAllocationNumber++){
-                            for (int currentAllocationYValStart = 0; currentAllocationYValStart < currentBlockHeight; currentAllocationYValStart++){
-                                int currentAllocationYVal = currentAllocationYValStart + currentblockYval;
+                input_table->setItem(jobCounter,2,new QTableWidgetItem(QString::number(processArray[jobCounter][1])));
+                input_table->setItem(jobCounter,3,new QTableWidgetItem(QString::number(processArray[jobCounter][2])));
+            }
+        }
 
-                                int allocationArrayYVal = allocationArray[currentAllocationNumber][2];
-                                int allocationArrayMaxRange = allocationArray[currentAllocationNumber][3];
-                                //qInfo() << allocationArrayYVal << allocationArrayMaxRange;
-                                if (currentBlock = allocationArray[currentAllocationNumber][0]){
-                                    currentAllocationMaxRange = currentAllocationYVal + allocationArray[currentAllocationNumber][1];
-                                    if(currentAllocationYVal > allocationArrayMaxRange){
-                                        int allocationEnd = currentAllocationYVal + currentJobSize;
-                                        std::vector<int> vectorSimArray = {currentBlock, currentJobSize, currentAllocationYVal, allocationEnd, currentJob};
-                                        allocationArray.push_back(vectorSimArray);
-                                        qInfo() << "Updated allocationArray: " << allocationArray;
-                                        qInfo() << "Requirements: " << allocationArrayYVal << allocationArrayMaxRange;
-                                        processArray[currentJob-1][3] = true;
+        //check if job is in the allocations and not finished
+        for (int jobCounter = 0; jobCounter<processArraySize; jobCounter++){
+            if(processArray[jobCounter][3] == true && processArray[jobCounter][1] != 0){
+                processArray[jobCounter][1] = processArray[jobCounter][1] - 1;
+                processArray[jobCounter][2] = processArray[jobCounter][2] + 1;
 
-                                        //break out of loop
-                                        currentAllocationNumber = allocationArraySize;
-                                        currentAllocationYValStart = currentBlockHeight;
+                input_table->setItem(jobCounter,2,new QTableWidgetItem(QString::number(processArray[jobCounter][1])));
+                input_table->setItem(jobCounter,3,new QTableWidgetItem(QString::number(processArray[jobCounter][2])));
+            }
+        }
 
-                                    }
-                                    else if(currentAllocationYVal < allocationArrayYVal && currentAllocationMaxRange < allocationArrayMaxRange){
-                                        int allocationEnd = currentAllocationYVal + currentJobSize;
-                                        std::vector<int> vectorSimArray = {currentBlock, currentJobSize, currentAllocationYVal, allocationEnd, currentJob};
-                                        allocationArray.push_back(vectorSimArray);
-                                        qInfo() << "Updated allocationArray: " << allocationArray;
-                                        qInfo() << "Requirements: " << allocationArrayYVal << allocationArrayMaxRange;
-                                        processArray[currentJob-1][3] = true;
+        for (int blockCounter = 0; blockCounter < blockArraySize; blockCounter++){
+            //qInfo() << jobCounter << blockCounter << (processArray[jobCounter][0]/2) << memoryBlockArray[blockCounter][1];
 
-                                        //break out of loop
-                                        currentAllocationNumber = allocationArraySize;
-                                        currentAllocationYValStart = currentBlockHeight;
+            if ((processArray[jobCounter][0]/2) <= memoryBlockArray[blockCounter][1] && processArray[jobCounter][3] == false)
+            {
+                if(allocationArraySize==0 && processArray[jobCounter][3] == false)
+                {
+                    int possibleAllocationStart = memoryBlockArray[blockCounter][2];
+                    int possibleAllocationEnd = possibleAllocationStart + (processArray[jobCounter][0]/2);
+
+                    std::vector<int> vectorSimArray = {blockCounter+1, (processArray[jobCounter][0]/2), possibleAllocationStart, possibleAllocationEnd, jobCounter+1};
+                    allocationArray.push_back(vectorSimArray);
+                    qInfo() << "New allocationArray: " << allocationArray;
+                    processArray[jobCounter][3] = true;
+                    update();
+                    allocationArraySize = allocationArray.size();
+
+                    //break out of for loop
+                    goto resetLoop;
+                }
+
+                std::vector<int> tempAlloArray;
+
+                for(int alloCounter = 0; alloCounter < allocationArraySize; alloCounter++)
+                {
+                    int alloEnd = allocationArray[alloCounter][3];
+                    for (int alloStart = allocationArray[alloCounter][2]; alloStart<=alloEnd;alloStart++){
+                         tempAlloArray.push_back(alloStart);
+                    }
+                }
+                int tempAlloSize = tempAlloArray.size();
+
+                for(int memoryCounter = memoryBlockArray[blockCounter][2]; memoryCounter <= memoryBlockArray[blockCounter][3]; memoryCounter++)
+                {
+                    int possibleAllocationStart = memoryCounter;
+                    int possibleAllocationEnd = possibleAllocationStart + (processArray[jobCounter][0]/2);
+
+                    for (int tempAlloCounter =0;tempAlloCounter<tempAlloSize;tempAlloCounter++){
+                        if (std::count(tempAlloArray.begin(), tempAlloArray.end(), possibleAllocationStart)) {
+                        }
+                        else
+                        {
+                            if (possibleAllocationEnd-1 <= memoryBlockArray[blockCounter][3] && processArray[jobCounter][3] == false){
+                                std::vector<int> vectorSimArray = {blockCounter+1, (processArray[jobCounter][0]/2), possibleAllocationStart, possibleAllocationEnd, jobCounter+1};
+                                allocationArray.push_back(vectorSimArray);
+                                qInfo() << "Updated more allocationArray: " << allocationArray;
+                                processArray[jobCounter][3] = true;
+                                update();
+                                allocationArraySize = allocationArray.size();
+
+                                tempAlloArray.clear();
+
+                                for(int alloCounter = 0; alloCounter < allocationArraySize; alloCounter++)
+                                {
+                                    int alloEnd = allocationArray[alloCounter][3];
+                                    for (int alloStart = allocationArray[alloCounter][2]; alloStart<=alloEnd;alloStart++){
+                                         tempAlloArray.push_back(alloStart);
                                     }
                                 }
-                                else{
-                                    qInfo() << "no availiable block for allocation";
-                                }
+                                tempAlloSize = tempAlloArray.size();
+
                             }
                         }
-                    }
-                    //catches if there is no allocations yet
-                    else if(allocationArraySize <= 0){
-                        int allocationStart = currentblockYval;
-                        int allocationEnd = currentblockYval + currentJobSize;
-
-                        //assigns allocation
-                        std::vector<int> vectorSimArray = {currentBlock, allocationHeight, allocationStart, allocationEnd, currentJob};
-                        allocationArray.push_back(vectorSimArray);
-                        qInfo() << "New AllocationArray: " << allocationArray;
-                        processArray[currentJob-1][3] = true;
-                        currentBlock=1;//reset crrentBlock
                     }
                 }
             }
         }
 
-
         //remove allocation if finished
         for (int processCounter = 0; processCounter < processArraySize;processCounter++){
+            //qInfo() << processArray[processCounter][1]<<processArray[processCounter][3];
             if(processArray[processCounter][1] == 0){
                processArray[processCounter][3]=false;
                for (int i = 0; i < allocationArraySize; i++)
                {
-                   if (processCounter == allocationArray[i][0])
+                   if ((processCounter+1) == allocationArray[i][4])
                    {
-                        allocationArray.erase(allocationArray.begin() + i);
+                        allocationArray.erase( std::next( std::begin( allocationArray ), i ) );
+                        qInfo() << "after removal" << allocationArray;
+                        update();
+                        allocationArraySize = allocationArray.size();
                    }
                }
             }
         }
-
-
-        //check if job is in the allocations and not finished
-        if(processArray[currentJob-1][3] == true && processArray[currentJob-1][1] != 0){
-            processArray[currentJob-1][1] = processArray[currentJob-1][1] - 1;
-            processArray[currentJob-1][2] = processArray[currentJob-1][1] + 1;
-        }
-
-        //check if job is not in allocations and finished
-        completedJobs = 0;//reset counter
-        for (int processCounter = 0; processCounter < processArraySize;processCounter++){
-            if(processArray[processCounter][3] == false && processArray[processCounter][1] == 0){
-               completedJobs++;
-               //since this iteration covers all jobs, if all jobs are complete we abort the the simulation loop
-
-            }
-        }
-
-        //movement of variables
+        resetLoop:
         delay();
-        if (currentJob < processArraySize){
-            currentJob = currentJob + 1;
-        }
-        else {
-            currentJob = 1;
-        }
-
-        update();
-        currentTime = currentTime + 1;
-        QString timeStr = QString::number(currentTime);
-        QString timValTxt = "Current Time Unit: " + timeStr;
-        curr_time_unit_lbl->setText(timValTxt);
     }
 
+    goto complete;
+
+    error:
+    QMessageBox::critical(this, "Error", "One of the job sizes is too large for any of the inputted memory blocks");
+
+    //enaable buttons
+    add_job_btn->setEnabled(true);
+    del_job_btn->setEnabled(true);
+    add_block_btn->setEnabled(true);
+    del_block_btn->setEnabled(true);
+    simul_job_btn->setEnabled(true);
+    goto exit;
+
+    complete:
     QMessageBox::information(this, "Complete", "Simulation Complete");
+
+    //reset all process
+    for (int processCounter = 0; processCounter < processArraySize;processCounter++){
+           processArray[processCounter][3]=false;
+           processArray[processCounter][1] = processArray[processCounter][2];
+           processArray[processCounter][2] = 0;
+    }
 
     //enaable buttons
     add_job_btn->setEnabled(true);
@@ -605,6 +629,8 @@ void Widget::FirstFit(){
     del_block_btn->setEnabled(true);
     simul_job_btn->setEnabled(true);
 
+    exit:
+    return;
 
 }
 void Widget::BestFit(){
@@ -621,4 +647,8 @@ void Widget::delay()
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
+void Widget::tableUpdate(int x,int y, int z){
+    input_table->setItem(x,2,new QTableWidgetItem(QString::number(y)));
+    input_table->setItem(x,3,new QTableWidgetItem(QString::number(z)));
+}
 

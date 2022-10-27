@@ -57,7 +57,7 @@ private:
     QPushButton *simul_job_btn;
 
     QLabel *curr_time_unit_lbl;
-    QLabel *curr_fragmentation_lbl;
+    QLabel *curr_job_lbl;
     QLabel *curr_jobs_fin_lbl;
 
     bool m_clicked;
@@ -76,5 +76,6 @@ public slots:
     void WorstFit();
 
     void delay();
+    void tableUpdate(int, int, int);
 };
 #endif // WIDGET_H
